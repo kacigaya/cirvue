@@ -4,6 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SelectionTest {
@@ -33,6 +34,11 @@ class SelectionTest {
     @Test fun tapSquareNearCornerIsClampedToImage() {
         val bounds = SelectionGeometry.tapBounds(Offset(990f, 1990f), emptyList(), Size(1000f, 2000f), 0f)
         assertEquals(Rect(815f, 1815f, 1000f, 2000f), bounds)
+    }
+
+    @Test fun cropOutsideImageIsEmpty() {
+        val r = SelectionGeometry.cropRect(Rect(1200f, 100f, 1300f, 200f), Size(1000f, 2000f))
+        assertTrue(r.width < 1f)
     }
 
     @Test fun cropPadsBothAxesUsingLongerSide() {

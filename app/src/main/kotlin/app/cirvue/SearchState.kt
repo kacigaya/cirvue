@@ -89,9 +89,9 @@ class SearchState(
         job = scope.launch {
             panel = try {
                 val crop = withContext(Dispatchers.Default) { crop(stage.image, selection.bounds) }
-                val result = recognizer.recognize(crop)
-                query = result.text
-                if (result.text.isBlank()) {
+                val result = crop?.let { recognizer.recognize(it) }
+                query = result?.text.orEmpty()
+                if (result == null || result.text.isBlank()) {
                     Panel.NothingFound
                 } else {
                     if (autoSearch()) search(result.text)
@@ -115,8 +115,10 @@ class SearchState(
         search(text)
     }
 
-    private fun crop(image: Bitmap, bounds: Rect): Bitmap {
+    /** Null when the selection lies outside the image. */
+    private fun crop(image: Bitmap, bounds: Rect): Bitmap? {
         val r = SelectionGeometry.cropRect(bounds, Size(image.width.toFloat(), image.height.toFloat()))
+        if (r.width < 1f || r.height < 1f) return null
         val x = r.left.toInt()
         val y = r.top.toInt()
         val w = r.width.toInt().coerceIn(1, image.width - x)

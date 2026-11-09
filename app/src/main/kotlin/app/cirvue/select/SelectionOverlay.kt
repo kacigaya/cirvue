@@ -142,12 +142,16 @@ fun SelectionOverlay(
                         tool == Tool.Draw -> boundsOf(trail)
                         else -> boundsOf(listOfNotNull(boxStart, boxEnd))
                     }
+                    val imageRect = Rect(Offset.Zero, imageSize)
                     if (gesture == null || SelectionGeometry.isTooSmall(gesture, minSelection)) {
                         val point = transform.toImage(gesture?.center ?: start)
-                        val bounds = SelectionGeometry.tapBounds(point, textBoxes, imageSize, tapSlop / transform.scale)
-                        from = Rect(center = gesture?.center ?: start, radius = 1f)
-                        onSelect(Selection.Tap(point, bounds))
-                    } else {
+                        // Taps on the letterbox margin around a photo select nothing.
+                        if (imageRect.contains(point)) {
+                            val bounds = SelectionGeometry.tapBounds(point, textBoxes, imageSize, tapSlop / transform.scale)
+                            from = Rect(center = gesture?.center ?: start, radius = 1f)
+                            onSelect(Selection.Tap(point, bounds))
+                        }
+                    } else if (Rect(transform.toImage(gesture.topLeft), transform.toImage(gesture.bottomRight)).overlaps(imageRect)) {
                         from = gesture
                         onSelect(
                             if (tool == Tool.Draw) {
