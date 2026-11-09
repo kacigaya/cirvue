@@ -24,10 +24,11 @@ Cirvue turns a selected part of the screen, or of a photo, into a short text que
 |---|---|---|
 | Assistant | A `VoiceInteractionService` needs `BIND_VOICE_INTERACTION`, `sessionService`, and `recognitionService` in its XML. AOSP rejects the service without a recognition service, so Cirvue ships a stub that returns an error. | AOSP `VoiceInteractionServiceInfo` |
 | Assistant role | `ROLE_ASSISTANT` is not requestable through the role dialog. The app sends the user to the default-apps settings and checks `RoleManager.isRoleHeld`. | `RoleManager` docs |
-| Screenshot | `VoiceInteractionSession.onHandleScreenshot` gives the screenshot when the user allows "Use screenshot". It is `null` for secure windows or when the user turns it off. | `VoiceInteractionSession` docs |
-| Assist data | Cirvue does not need the view structure. The service calls `setDisabledShowContext(SHOW_WITH_ASSIST)`, so the system does not collect it. | `VoiceInteractionService` docs |
+| Screenshot | `VoiceInteractionSession.onHandleScreenshot` gives the screenshot. It can arrive before `onShow`, so each invocation starts in `onPrepareShow`. It is `null` for secure windows. | `VoiceInteractionSession` docs, tested on Android 15 |
+| Assist data | Android takes the screenshot only when it also fetches the assist data of the current app. With `setDisabledShowContext(SHOW_WITH_ASSIST)`, or with "Use text from screen" off, the screenshot is always `null`. Cirvue keeps assist data on and never reads it: the session does not override `onHandleAssist`. | AOSP `AssistDataRequester`, tested on Android 15 |
 | Camera | CameraX 1.6.2 (stable) has `CameraXViewfinder` in `camera-compose`. `ImageCapture.takePicture` with an in-memory callback avoids files. | CameraX release notes |
 | OCR | PaddleOCR 3.x deploys on Android with ONNX Runtime and PP-OCRv6. Its sample uses OpenCV; Cirvue ports the small pre- and post-processing steps to Kotlin to avoid OpenCV. PP-OCRv6 small: 9.9 MB detection, 21.2 MB recognition, 50 languages. | PaddleOCR Android deployment docs |
+| ONNX Runtime | Android releases 1.29 and later ship Microsoft 1DS telemetry: an auto-start `ContentProvider`, `ACCESS_NETWORK_STATE`, and device IDs. Cirvue pins 1.28.0, which has none of these. The manifest also removes the provider and the permission. | AAR contents of 1.27 to 1.31 |
 | VLM | llama.cpp `libmtmd` supports SmolVLM2. `ggml-org/SmolVLM2-500M-Video-Instruct-GGUF` Q8_0: 437 MB model and 109 MB projector. | llama.cpp `docs/multimodal.md`, Hugging Face |
 | Search | `https://duckduckgo.com/?q=<query>`. Cirvue adds no other parameters, so user settings and DuckDuckGo branding stay intact. | DuckDuckGo URL parameters help page |
 
@@ -58,7 +59,7 @@ Cirvue turns a selected part of the screen, or of a photo, into a short text que
 ## Query generation
 
 1. Crop the selection bounds from the source image. Downscale the crop to at most 512 px on the long side for the VLM, so it fits one image tile.
-2. Run OCR on the crop.
+2. Run OCR on the crop. Drop lines with confidence below 0.5, and lines of 3 characters or fewer when longer lines exist. Icons often read as short stray strings.
 3. If text covers most of the crop, the query is the text.
 4. Otherwise ask the VLM for a short query and give it the OCR text as context.
 5. `QueryBuilder` cleans the result: it removes quotes, prompts, and filler, limits length, and drops model numbers or brand-like tokens that the VLM produced but OCR did not see. This stops invented product names.
@@ -69,6 +70,19 @@ Cirvue turns a selected part of the screen, or of a photo, into a short text que
 - The app has `INTERNET` only for model downloads through `DownloadManager`. Search opens in the user's browser through Custom Tabs.
 - Downloads come from pinned Hugging Face revisions and are checked with SHA-256 before use.
 - Images live in memory only. Nothing is written to disk, logged, or shared.
+
+## Measured performance
+
+Redroid (Android 15) on an Ampere Neoverse-N1 host, 4 threads. Phone results will differ.
+
+| Step | Time |
+|---|---|
+| OCR, 820 x 140 crop (detect and read) | 0.45 s |
+| OCR detection, full 1080 x 2400 screenshot | 2.9 s (tap targets use a 1440 px copy) |
+| SmolVLM2 load | 0.8 s to 3.7 s |
+| SmolVLM2 describe, 512 px image | 4.4 s |
+| SmolVLM2 describe, 768 px image | 11.1 s |
+| SmolVLM2 peak memory | 1.1 GB RSS |
 
 ## UI
 
@@ -97,3 +111,6 @@ Material 3 Expressive with dynamic color, edge-to-edge, `MotionScheme.expressive
 - 64-bit ARM only.
 - Text boxes are axis-aligned. Strongly rotated text reads less well.
 - Tap selects the text line under the finger. If there is none, it selects a square around the tap point. There is no object segmentation model.
+- Android requires a speech recognizer with every assistant. While Cirvue is the assistant, apps that use the system speech recognizer get an error.
+- Android sends the assist data of the current app with each screenshot. Cirvue cannot turn this off, but it never reads the data.
+- If no browser supports Custom Tabs, results open in the default browser.

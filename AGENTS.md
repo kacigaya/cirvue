@@ -13,9 +13,9 @@ Privacy-first Android alternative to Circle to Search. Kotlin, Jetpack Compose, 
 
 ## Modules
 
-- `:app` — assistant session, camera, selection overlay, recognition pipeline, search, settings, model downloads.
-- `:ocr` — PP-OCRv6 (small) text detection and recognition on ONNX Runtime. Pure Kotlin pre- and post-processing, no OpenCV.
-- `:vlm` — SmolVLM2-500M on llama.cpp (`libmtmd`) through JNI. llama.cpp is a Git submodule at `vlm/src/main/cpp/llama.cpp`, pinned to `v0.9.0`.
+- `:app`: assistant session, camera, selection overlay, recognition pipeline, search, settings, model downloads.
+- `:ocr`: PP-OCRv6 (small) text detection and recognition on ONNX Runtime. Pure Kotlin pre- and post-processing, no OpenCV.
+- `:vlm`: SmolVLM2-500M on llama.cpp (`libmtmd`) through JNI. llama.cpp is a Git submodule at `vlm/src/main/cpp/llama.cpp`, pinned to `v0.9.0`.
 
 ## Toolchain
 

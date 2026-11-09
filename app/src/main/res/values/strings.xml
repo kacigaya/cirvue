@@ -47,7 +47,7 @@
     <string name="nothing_found">Nothing recognized. Type a search instead.</string>
     <string name="recognition_failed">Recognition failed. Type a search instead.</string>
     <string name="blocked_title">This screen can\'t be searched</string>
-    <string name="blocked_body">The app blocks screenshots, or screenshots are off in the assistant settings.</string>
+    <string name="blocked_body">The app blocks screenshots, or \"Use screenshot\" or \"Use text from screen\" is off in the assistant settings.</string>
     <string name="action_use_camera">Use camera</string>
     <string name="no_browser">No browser found to open the results</string>
     <string name="selection_description">Screen image. Draw around, drag a box over, or tap what you want to search.</string>
