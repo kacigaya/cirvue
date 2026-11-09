@@ -140,11 +140,12 @@ private fun HintPill(text: String) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SelectToolbar(tool: Tool, onTool: (Tool) -> Unit, onCamera: () -> Unit, onClose: () -> Unit) {
-    val toggleColors = IconButtonDefaults.iconToggleButtonColors(
-        checkedContainerColor = MaterialTheme.colorScheme.primary,
-        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-    )
     HorizontalFloatingToolbar(expanded = true, colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()) {
+        // Read inside the toolbar, so unchecked icons use the toolbar's content color.
+        val toggleColors = IconButtonDefaults.iconToggleButtonColors(
+            checkedContainerColor = MaterialTheme.colorScheme.primary,
+            checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+        )
         IconToggleButton(checked = tool == Tool.Draw, onCheckedChange = { onTool(Tool.Draw) }, colors = toggleColors) {
             Icon(painterResource(R.drawable.ic_gesture), stringResource(R.string.tool_draw))
         }
@@ -250,29 +251,29 @@ private fun QueryField(state: SearchState) {
 
 @Composable
 private fun Blocked(onCamera: () -> Unit, onClose: () -> Unit) {
-    Box(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 480.dp)) {
-            Icon(
-                painterResource(R.drawable.ic_lock),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(16.dp))
-            Text(stringResource(R.string.blocked_title), style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.blocked_body),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
-                Button(onClick = onCamera) { Text(stringResource(R.string.action_use_camera)) }
+    // A Surface, not a background, so text gets the matching content color.
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Box(Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 480.dp)) {
+                Icon(
+                    painterResource(R.drawable.ic_lock),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(stringResource(R.string.blocked_title), style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.blocked_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
+                    Button(onClick = onCamera) { Text(stringResource(R.string.action_use_camera)) }
+                }
             }
         }
     }

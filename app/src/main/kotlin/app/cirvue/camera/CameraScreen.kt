@@ -41,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -196,24 +197,26 @@ private fun Viewfinder(
 
 @Composable
 private fun Message(title: String?, body: String, action: String?, onAction: () -> Unit, onPick: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).padding(24.dp), Alignment.Center) {
-        Column(Modifier.widthIn(max = 480.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                painterResource(R.drawable.ic_photo_camera),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(16.dp))
-            if (title != null) {
-                Text(title, style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.height(8.dp))
-            }
-            Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onPick) { Text(stringResource(R.string.action_pick_photo)) }
-                if (action != null) Button(onClick = onAction) { Text(action) }
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Box(Modifier.padding(24.dp), Alignment.Center) {
+            Column(Modifier.widthIn(max = 480.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    painterResource(R.drawable.ic_photo_camera),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.height(16.dp))
+                if (title != null) {
+                    Text(title, style = MaterialTheme.typography.headlineSmall)
+                    Spacer(Modifier.height(8.dp))
+                }
+                Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onPick) { Text(stringResource(R.string.action_pick_photo)) }
+                    if (action != null) Button(onClick = onAction) { Text(action) }
+                }
             }
         }
     }
