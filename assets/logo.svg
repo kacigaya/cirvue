@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Cirvue logo</title>
+  <desc id="desc">A light selection circle, open at the top left, with a dot that marks the start of the stroke, on a deep teal square.</desc>
+  <rect width="200" height="200" rx="44" fill="#0E5C52"/>
+  <path d="M100 54A46 46 0 1 1 54 100" stroke="#E6F4F0" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="67.5" cy="67.5" r="10.5" fill="#E6F4F0"/>
+</svg>

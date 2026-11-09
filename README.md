@@ -1,68 +1,91 @@
-# Cirvue
+<p align="center">
+  <img src="assets/logo.svg" alt="Cirvue logo" width="140">
+</p>
 
-Cirvue is a privacy-first alternative to Circle to Search for Android. Hold the power button, circle something on the screen, and Cirvue searches DuckDuckGo for it. Text recognition and image recognition run on the phone. Only the text query leaves the device.
+<h1 align="center">Cirvue</h1>
+
+<p align="center">
+  <strong>A private alternative to Circle to Search for Android.</strong><br>
+  <em>Circle, box, or tap part of the screen. Cirvue reads it on your device and searches DuckDuckGo. No account, no Google Play services.</em>
+</p>
+
+<p align="center">
+  <a href="https://kotlinlang.org"><img alt="Kotlin 2.4.21" src="https://shieldcn.dev/badge/Kotlin-2.4.21-7f52ff.svg?variant=secondary&amp;logo=kotlin"></a>
+  <a href="https://developer.android.com"><img alt="Android compile SDK 37" src="https://shieldcn.dev/badge/Android-SDK_37-3ddc84.svg?variant=secondary&amp;logo=android&amp;logoColor=171717"></a>
+  <a href="https://m3.material.io"><img alt="Material 3 Expressive" src="https://shieldcn.dev/badge/Material_3-Expressive-6750a4.svg?variant=secondary"></a>
+  <a href="https://gradle.org"><img alt="Gradle 9.9" src="https://shieldcn.dev/badge/Gradle-9.9-02303a.svg?variant=secondary&amp;logo=gradle"></a>
+  <a href="https://onnxruntime.ai"><img alt="ONNX Runtime 1.28" src="https://shieldcn.dev/badge/ONNX_Runtime-1.28-005ced.svg?variant=secondary&amp;logo=onnx"></a>
+  <a href="https://github.com/ggml-org/llama.cpp"><img alt="llama.cpp v0.9.0" src="https://shieldcn.dev/badge/llama.cpp-v0.9.0-171717.svg?variant=secondary"></a>
+</p>
 
 ## Features
 
-- **Screen search.** Cirvue registers as the digital assistant. It receives a screenshot through the Android Assist API and shows it as an overlay.
-- **Selection.** Draw around an object, drag a box, or tap a line of text.
-- **Camera search.** Take a photo with the built-in CameraX viewfinder, or choose one with the system photo picker. Photos go through the same pipeline.
-- **On-device recognition.** PP-OCRv6 reads text, brands, and model numbers. SmolVLM2-500M describes objects. Both run offline after you download them.
-- **Careful queries.** Cirvue drops model numbers that the vision model produced but OCR did not see, so it does not invent product names.
-- **DuckDuckGo search.** Results open in a Custom Tab. You can edit the query and search again. An optional setting lets you review every query before it is sent.
+- Hold the power button to open Cirvue over any app. Cirvue becomes your digital assistant.
+- Select what you want to search: draw a circle, drag a box, or tap a line of text.
+- Search from a photo: use the camera or pick an image from your gallery.
+- Text recognition on the device with PP-OCRv6 (50 languages).
+- Image description on the device with SmolVLM2 when the selection has little text.
+- Optional review: edit the query before the search opens.
+- Up to three suggestions from the text in your selection.
+- Material 3 Expressive with Material You colors.
 
 ## Privacy
 
-- No Google Play services, accounts, analytics, ads, or telemetry.
-- Screenshots and photos stay in memory. Cirvue never writes them to disk and never uploads them.
-- Only the text query goes to `https://duckduckgo.com/?q=…`, in your browser.
-- Permissions: `CAMERA`, and `INTERNET` for the optional model downloads.
-- No Accessibility Service, root, Shizuku, or hidden APIs. Apps that block screenshots stay blocked.
+- No account, no analytics, no ads, no telemetry.
+- No Google Play services, Accessibility Service, root, or hidden APIs.
+- Images never leave your device. Only the text query goes to DuckDuckGo.
+- Screenshots and photos stay in memory. Cirvue drops them when the screen closes.
+- Apps that block screenshots (`FLAG_SECURE`) stay blocked.
+- Search opens in your browser through Custom Tabs. Cirvue adds no tracking parameters.
 
-Two Android limits apply while Cirvue is the assistant:
+The app sends requests to these services:
 
-- Android sends the assist data (text and layout) of the current app with each screenshot. Cirvue cannot turn this off, but it never reads the data.
-- Android requires a speech recognizer with every assistant. Cirvue has no voice input, so apps that use the system speech recognizer get an error.
+| Service | Use | Data sent |
+|---|---|---|
+| [Hugging Face](https://huggingface.co/) | Model downloads | Requests for the model files |
+| [DuckDuckGo](https://duckduckgo.com/) | Search | The text query |
+
+## Models
+
+Cirvue does not include models in the APK. Download them from the home screen. Each file comes from a pinned revision, and Cirvue checks its SHA-256 before use.
+
+| Pack | Model | Size | License |
+|---|---|---|---|
+| Text recognition | [PP-OCRv6 small](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx) | 31 MB | Apache-2.0 |
+| Visual recognition | [SmolVLM2-500M Q8_0](https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF) | 546 MB | Apache-2.0 |
+
+Without models, you type the query yourself.
 
 ## Requirements
 
 - Android 10 (API 29) or later.
-- A 64-bit ARM device (`arm64-v8a`).
-- About 600 MB free storage for both models, and 1.2 GB free memory for visual recognition.
-
-## Set up
-
-1. Install the app and open Cirvue.
-2. Tap **Open settings**. Choose Cirvue as the **Digital assistant app**.
-3. Download **Text recognition** (31 MB) and, if you want object recognition, **Visual recognition** (546 MB).
-4. Hold the power button or the home handle to search your screen.
-
-On some phones, holding the power button opens the power menu. Change this in the system settings for the power button.
-
-## Models
-
-| Model | Use | Size | License | Source |
-|---|---|---|---|---|
-| PP-OCRv6 small (ONNX) | Text detection and recognition | 31 MB | Apache-2.0 | [PaddlePaddle](https://huggingface.co/PaddlePaddle) |
-| SmolVLM2-500M-Video-Instruct (Q8_0 GGUF) | Object description | 546 MB | Apache-2.0 | [ggml-org](https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF) |
-
-Downloads use pinned Hugging Face revisions. Cirvue checks the SHA-256 of each file before it uses the file.
+- 64-bit ARM device (`arm64-v8a`).
 
 ## Build
 
+Requirements: JDK 21, the Android SDK (compile SDK 37), and NDK `29.0.14206865`.
+
+llama.cpp is a Git submodule. Clone with submodules:
+
 ```sh
 git clone --recursive <repository-url>
-cd cirvue
-./gradlew :app:assembleDebug
-./gradlew testDebugUnitTest
 ```
 
-You need JDK 21, the Android SDK (compileSdk 37), and NDK `29.0.14206865`. The build compiles llama.cpp, so the first build takes several minutes.
+In an existing clone, run `git submodule update --init`.
 
-## Architecture
+```sh
+./gradlew :app:assembleDebug
+./gradlew testDebugUnitTest
+./gradlew :app:lintDebug
+```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the modules, the recognition pipeline, platform findings, and measured performance. See [docs/DEVICE-TESTING.md](docs/DEVICE-TESTING.md) to test on an arm64 Linux host without a phone.
+## Documentation
 
-## License
+- [Architecture](docs/ARCHITECTURE.md): flow, modules, query generation, and limits.
+- [Device testing](docs/DEVICE-TESTING.md): run Cirvue in an Android container.
 
-Not chosen yet.
+## Limits
+
+- 64-bit ARM only.
+- Strongly rotated text reads less well.
+- Tap selects the text line under your finger. Without text, it selects a square around the tap point.
