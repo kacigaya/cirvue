@@ -52,9 +52,12 @@
             android:theme="@style/Theme.Cirvue.Search"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Guard: ONNX Runtime 1.29+ starts its telemetry with this provider. The pinned 1.28.0
+             does not ship the class, so lint reports it as missing. -->
         <provider
             android:name="ai.onnxruntime.TelemetryInitializer"
             android:authorities="${applicationId}.onnxruntime_telemetry_initializer"
+            tools:ignore="MissingClass"
             tools:node="remove" />
 
         <service
