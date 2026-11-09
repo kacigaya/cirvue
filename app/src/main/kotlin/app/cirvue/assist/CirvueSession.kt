@@ -20,8 +20,9 @@ class CirvueSession(context: Context) : VoiceInteractionSession(context) {
     private var handled = false
     private val timeout = Runnable { deliver(null) }
 
-    override fun onShow(args: Bundle?, showFlags: Int) {
-        super.onShow(args, showFlags)
+    // The screenshot can arrive before onShow, so a new invocation starts here.
+    override fun onPrepareShow(args: Bundle?, showFlags: Int) {
+        super.onPrepareShow(args, showFlags)
         handled = false
         if (showFlags and SHOW_WITH_SCREENSHOT == 0) {
             // The user turned off "Use screenshot" in the assistant settings.
@@ -32,7 +33,9 @@ class CirvueSession(context: Context) : VoiceInteractionSession(context) {
     }
 
     /** [screenshot] is null for secure windows (FLAG_SECURE) and when capture fails. */
-    override fun onHandleScreenshot(screenshot: Bitmap?) = deliver(screenshot)
+    override fun onHandleScreenshot(screenshot: Bitmap?) {
+        deliver(screenshot)
+    }
 
     override fun onHide() {
         handler.removeCallbacks(timeout)

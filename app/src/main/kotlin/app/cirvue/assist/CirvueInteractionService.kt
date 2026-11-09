@@ -1,14 +1,12 @@
 package app.cirvue.assist
 
 import android.service.voice.VoiceInteractionService
-import android.service.voice.VoiceInteractionSession
 
-/** Makes Cirvue selectable as the device's digital assistant. */
-class CirvueInteractionService : VoiceInteractionService() {
-    override fun onReady() {
-        super.onReady()
-        // Cirvue needs the screenshot only. Without this, the system also collects the view
-        // structure of the current app (its text and layout) and hands it to the session.
-        setDisabledShowContext(VoiceInteractionSession.SHOW_WITH_ASSIST)
-    }
-}
+/**
+ * Makes Cirvue selectable as the device's digital assistant.
+ *
+ * Cirvue needs only the screenshot. Android takes the screenshot only when it also collects the
+ * assist data of the current app (`AssistDataRequester`), so `setDisabledShowContext` cannot turn
+ * that off. [CirvueSession] does not override `onHandleAssist`, so the data is never read.
+ */
+class CirvueInteractionService : VoiceInteractionService()
