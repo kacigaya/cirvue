@@ -15,6 +15,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.InitializationException
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -57,11 +58,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.cirvue.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
@@ -149,7 +152,17 @@ private fun Viewfinder(
     }
 
     LaunchedEffect(lifecycleOwner) {
-        val provider = ProcessCameraProvider.awaitInstance(context)
+        if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            onUnavailable()
+            return@LaunchedEffect
+        }
+        // CameraX throws when the device reports fewer cameras than its features claim.
+        val provider = try {
+            ProcessCameraProvider.awaitInstance(context)
+        } catch (_: InitializationException) {
+            onUnavailable()
+            return@LaunchedEffect
+        }
         if (!provider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
             onUnavailable()
             return@LaunchedEffect
@@ -158,7 +171,7 @@ private fun Viewfinder(
         try {
             provider.unbindAll()
             provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
-            kotlinx.coroutines.awaitCancellation()
+            awaitCancellation()
         } catch (e: IllegalArgumentException) {
             onUnavailable()
         } finally {
@@ -208,14 +221,24 @@ private fun Message(title: String?, body: String, action: String?, onAction: () 
                 )
                 Spacer(Modifier.height(16.dp))
                 if (title != null) {
-                    Text(title, style = MaterialTheme.typography.headlineSmall)
+                    Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
                 }
-                Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    body,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
                 Spacer(Modifier.height(24.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onPick) { Text(stringResource(R.string.action_pick_photo)) }
-                    if (action != null) Button(onClick = onAction) { Text(action) }
+                    // The photo picker is the main action when the camera cannot be used.
+                    if (action != null) {
+                        TextButton(onClick = onPick) { Text(stringResource(R.string.action_pick_photo)) }
+                        Button(onClick = onAction) { Text(action) }
+                    } else {
+                        Button(onClick = onPick) { Text(stringResource(R.string.action_pick_photo)) }
+                    }
                 }
             }
         }
