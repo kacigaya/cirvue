@@ -54,6 +54,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.cirvue.Panel
 import app.cirvue.R
@@ -262,12 +263,17 @@ private fun Blocked(onCamera: () -> Unit, onClose: () -> Unit) {
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(16.dp))
-                Text(stringResource(R.string.blocked_title), style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    stringResource(R.string.blocked_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     stringResource(R.string.blocked_body),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(24.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
