@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_camera"
+        android:shortcutId="camera"
+        android:shortcutShortLabel="@string/shortcut_camera">
+        <intent
+            android:action="app.cirvue.action.CAMERA"
+            android:targetClass="app.cirvue.SearchActivity"
+            android:targetPackage="app.cirvue" />
+    </shortcut>
+</shortcuts>
