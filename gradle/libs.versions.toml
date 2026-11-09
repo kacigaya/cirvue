@@ -11,10 +11,12 @@ coreKtx = "1.19.1"
 camera = "1.6.2"
 browser = "1.10.0"
 coroutines = "1.11.0"
-onnxruntime = "1.31.1"
+# Do not upgrade past 1.28.0: 1.29+ ships Microsoft 1DS telemetry for Android (an auto-start
+# ContentProvider, ACCESS_NETWORK_STATE, and device IDs). The app manifest also removes those.
+onnxruntime = "1.28.0"
 junit = "4.13.2"
-androidxTestRunner = "1.5.2"
-androidxTestJunit = "1.1.5"
+androidxTestRunner = "1.7.0"
+androidxTestJunit = "1.3.0"
 ndk = "29.0.14206865"
 
 [libraries]
