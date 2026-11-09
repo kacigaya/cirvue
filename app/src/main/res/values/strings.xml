@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cirvue</string>
+    <string name="shortcut_camera">Camera search</string>
+
+    <!-- Home -->
+    <string name="assistant_ready_title">Cirvue is your assistant</string>
+    <string name="assistant_ready_body">Hold the power button or the home handle to search your screen.</string>
+    <string name="assistant_setup_title">Set Cirvue as your assistant</string>
+    <string name="assistant_setup_body">Then hold the power button or the home handle to search anything on your screen. Choose Cirvue under Digital assistant app.</string>
+    <string name="assistant_open_settings">Open settings</string>
+    <string name="search_with_camera">Search with camera</string>
+    <string name="section_models">On-device models</string>
+    <string name="section_settings">Settings</string>
+    <string name="model_text">Text recognition</string>
+    <string name="model_text_detail">PP-OCRv6 · reads text, brands, and model numbers</string>
+    <string name="model_vision">Visual recognition</string>
+    <string name="model_vision_detail">SmolVLM2 · describes objects</string>
+    <string name="model_installed">Installed · %1$s</string>
+    <string name="model_missing">Not installed · %1$s</string>
+    <string name="model_downloading">Downloading · %1$d%%</string>
+    <string name="model_downloading_unknown">Starting download</string>
+    <string name="model_verifying">Checking file</string>
+    <string name="model_failed_network">Download failed. Check your connection.</string>
+    <string name="model_failed_storage">Not enough storage</string>
+    <string name="model_failed_checksum">The file was damaged. Try again.</string>
+    <string name="action_download">Download</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="setting_review">Review query before searching</string>
+    <string name="setting_review_detail">Edit the text before it goes to DuckDuckGo</string>
+    <string name="privacy_note">Images stay on this device. Only the search text goes to DuckDuckGo.</string>
+
+    <!-- Search overlay -->
+    <string name="hint_select">Circle, box, or tap what you want to search</string>
+    <string name="tool_draw">Draw</string>
+    <string name="tool_box">Box</string>
+    <string name="action_camera">Camera</string>
+    <string name="action_close">Close</string>
+    <string name="action_search">Search</string>
+    <string name="action_clear">Clear</string>
+    <string name="query_label">Search DuckDuckGo</string>
+    <string name="recognizing">Looking at your selection</string>
+    <string name="no_models_title">No models installed</string>
+    <string name="no_models_body">Type a search, or install models in Cirvue to recognize images.</string>
+    <string name="action_open_cirvue">Open Cirvue</string>
+    <string name="nothing_found">Nothing recognized. Type a search instead.</string>
+    <string name="recognition_failed">Recognition failed. Type a search instead.</string>
+    <string name="blocked_title">This screen can\'t be searched</string>
+    <string name="blocked_body">The app blocks screenshots, or screenshots are off in the assistant settings.</string>
+    <string name="action_use_camera">Use camera</string>
+    <string name="no_browser">No browser found to open the results</string>
+    <string name="selection_description">Screen image. Draw around, drag a box over, or tap what you want to search.</string>
+
+    <!-- Camera -->
+    <string name="action_capture">Take photo</string>
+    <string name="action_pick_photo">Choose a photo</string>
+    <string name="camera_permission_title">Camera access needed</string>
+    <string name="camera_permission_body">Cirvue uses the camera only while this screen is open. Photos stay in memory and are never saved.</string>
+    <string name="action_allow">Allow</string>
+    <string name="camera_unavailable">No camera available. Choose a photo instead.</string>
+    <string name="action_retake">Retake</string>
+</resources>
