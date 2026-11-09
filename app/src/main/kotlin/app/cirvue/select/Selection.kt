@@ -43,7 +43,7 @@ object SelectionGeometry {
 
     /**
      * The region for a tap: the smallest text box under the finger, grown by [slop], or a square
-     * around the tap point.
+     * around the tap point, clamped to the image.
      */
     fun tapBounds(point: Offset, textBoxes: List<Rect>, image: Size, slop: Float): Rect {
         val hit = textBoxes
@@ -51,7 +51,7 @@ object SelectionGeometry {
             .minByOrNull { it.width * it.height }
         if (hit != null) return hit
         val side = min(image.width, image.height) * TAP_SQUARE_FRACTION
-        return Rect(center = point, radius = side / 2f)
+        return Rect(center = point, radius = side / 2f).intersect(Rect(Offset.Zero, image))
     }
 
     /** Pads [bounds] by [padFraction], enforces [MIN_CROP], and clamps it to the image. */

@@ -12,6 +12,7 @@ object QueryBuilder {
     private const val MAX_OBJECT_WORDS = 8
     private const val MAX_TEXT_CHARS = 200
     private const val MAX_KEY_TERMS = 2
+    private const val MAX_NOISE_CHARS = 3
 
     /** Text covering at least this share of the crop means the user selected text, not an object. */
     const val TEXT_SELECTION_COVERAGE = 0.3f
@@ -33,7 +34,9 @@ object QueryBuilder {
      * @param vlmOutput raw text from the vision model, or null if it is not installed.
      */
     fun build(ocrLines: List<String>, textCoverage: Float, vlmOutput: String?): Query {
-        val lines = ocrLines.map(::collapse).filter { it.isNotEmpty() }
+        val all = ocrLines.map(::collapse).filter { it.isNotEmpty() }
+        // Icons often read as 1 to 3 stray characters. Keep them only if nothing longer exists.
+        val lines = all.filter { it.length > MAX_NOISE_CHARS }.ifEmpty { all }
         val text = joinText(lines)
         val described = vlmOutput?.let { described(it, lines) }.orEmpty()
 

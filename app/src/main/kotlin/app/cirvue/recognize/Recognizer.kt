@@ -49,6 +49,7 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
 
     suspend fun recognize(crop: Bitmap): Query = coroutineScope {
         val lines: List<TextLine> = withContext(native) { textRecognizer()?.recognize(crop).orEmpty() }
+            .filter { it.confidence >= MIN_CONFIDENCE }
         val coverage = coverage(lines.map { it.box }, crop.width, crop.height)
         val texts = lines.map { it.text }
         val needsVision = texts.isEmpty() || coverage < QueryBuilder.TEXT_SELECTION_COVERAGE
@@ -91,6 +92,9 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
 
     private companion object {
         const val MAX_TOKENS = 24
+
+        /** Below this, PP-OCR output is mostly misread icons and textures. */
+        const val MIN_CONFIDENCE = 0.5f
 
         /** Long side for tap-target detection. Screen text stays at least about 10 px tall. */
         const val DETECT_MAX_SIDE = 1440

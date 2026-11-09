@@ -5,6 +5,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class QueryBuilderTest {
+    @Test fun shortNoiseLinesDropWhenLongerTextExists() {
+        assertEquals("Connected devices Bluetooth", QueryBuilder.build(listOf("Connected devices", "Co0", "Bluetooth"), 1f, null).text)
+        assertEquals("OK", QueryBuilder.build(listOf("OK"), 1f, null).text)
+    }
+
     @Test fun textAtCoverageThresholdWinsOverDescription() {
         val lines = listOf("  Read\tthis  ", " next line ")
         for (coverage in listOf(QueryBuilder.TEXT_SELECTION_COVERAGE, 1f)) {
@@ -70,9 +75,9 @@ class QueryBuilderTest {
         assertEquals(listOf("oak desk", "blue lamp", "green sofa"), result.suggestions)
     }
 
-    @Test fun suggestionsIncludeOnlyLengthsFromThreeThrough60() {
+    @Test fun suggestionsSkipNoiseAndLinesOver60Characters() {
         val longest = "x".repeat(60)
-        val result = QueryBuilder.build(listOf("ab", "abc", longest, "x".repeat(61)), 0f, "red chair")
-        assertEquals(listOf("abc", longest), result.suggestions)
+        val result = QueryBuilder.build(listOf("ab", "abc", "abcd", longest, "x".repeat(61)), 0f, "red chair")
+        assertEquals(listOf("abcd", longest), result.suggestions)
     }
 }

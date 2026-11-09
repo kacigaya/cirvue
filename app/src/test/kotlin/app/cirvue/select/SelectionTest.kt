@@ -30,6 +30,11 @@ class SelectionTest {
         }
     }
 
+    @Test fun tapSquareNearCornerIsClampedToImage() {
+        val bounds = SelectionGeometry.tapBounds(Offset(990f, 1990f), emptyList(), Size(1000f, 2000f), 0f)
+        assertEquals(Rect(815f, 1815f, 1000f, 2000f), bounds)
+    }
+
     @Test fun cropPadsBothAxesUsingLongerSide() {
         assertEquals(Rect(90f, 110f, 210f, 210f), SelectionGeometry.cropRect(Rect(100f, 120f, 200f, 200f), Size(400f, 400f), 0.1f))
     }
