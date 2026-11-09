@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 
 sealed interface PackState {
@@ -107,9 +108,9 @@ class ModelStore(private val context: Context) {
         if (finished.size == downloads.size) {
             set(pack, PackState.Verifying)
             for ((f, _) in finished) {
-                if (!install(pack, f)) {
+                install(pack, f)?.let { reason ->
                     clearDownloads(pack)
-                    return set(pack, PackState.Failed(FailReason.Checksum))
+                    return set(pack, PackState.Failed(reason))
                 }
                 ids.edit { remove(key(pack, f)) }
             }
@@ -121,31 +122,40 @@ class ModelStore(private val context: Context) {
         set(pack, PackState.Downloading((done.toFloat() / total).coerceIn(0f, 1f)))
     }
 
-    /** Hashes the staged file while copying it into internal storage. */
-    private fun install(pack: ModelPack, f: ModelFile): Boolean {
-        val source = staging(pack, f) ?: return false
+    /**
+     * Hashes the staged file while copying it into internal storage. Returns null on success,
+     * or why the file cannot be used.
+     */
+    private fun install(pack: ModelPack, f: ModelFile): FailReason? {
+        val source = staging(pack, f) ?: return FailReason.Storage
         val target = file(pack, f.name)
         target.parentFile?.mkdirs()
         val temp = File(target.path + ".tmp")
         val digest = MessageDigest.getInstance("SHA-256")
-        source.inputStream().use { input ->
-            temp.outputStream().use { output ->
-                val buffer = ByteArray(1 shl 16)
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n < 0) break
-                    digest.update(buffer, 0, n)
-                    output.write(buffer, 0, n)
+        try {
+            source.inputStream().use { input ->
+                temp.outputStream().use { output ->
+                    val buffer = ByteArray(1 shl 16)
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        digest.update(buffer, 0, n)
+                        output.write(buffer, 0, n)
+                    }
                 }
             }
+        } catch (_: IOException) {
+            // Usually a full disk. The caller removes the staged file.
+            temp.delete()
+            return FailReason.Storage
         }
         source.delete()
         val ok = digest.digest().toHex() == f.sha256 && temp.length() == f.size
         if (!ok || !temp.renameTo(target)) {
             temp.delete()
-            return false
+            return FailReason.Checksum
         }
-        return true
+        return null
     }
 
     private data class Status(val status: Int, val downloaded: Long)
