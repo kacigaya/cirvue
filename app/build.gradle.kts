@@ -6,6 +6,8 @@ plugins {
 android {
     namespace = "app.cirvue"
     compileSdk = 37
+    // Also used to strip native debug symbols from the APK.
+    ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
         applicationId = "app.cirvue"
