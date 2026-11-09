@@ -3,8 +3,8 @@ package app.cirvue.search
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.net.toUri
 import java.net.URLEncoder
 
 object DuckDuckGo {
@@ -17,7 +17,7 @@ object DuckDuckGo {
 
     /** Opens the results in a Custom Tab, or in any browser if none supports Custom Tabs. */
     fun open(context: Context, query: String): Boolean {
-        val uri = Uri.parse(searchUrl(query))
+        val uri = searchUrl(query).toUri()
         return try {
             CustomTabsIntent.Builder()
                 .setShowTitle(true)

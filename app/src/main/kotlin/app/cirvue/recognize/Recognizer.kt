@@ -2,6 +2,7 @@ package app.cirvue.recognize
 
 import android.graphics.Bitmap
 import android.graphics.RectF
+import androidx.core.graphics.scale
 import app.cirvue.models.ModelPack
 import app.cirvue.models.ModelStore
 import app.cirvue.ocr.TextLine
@@ -36,7 +37,7 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
         val ocr = textRecognizer() ?: return@withContext emptyList()
         val scale = (DETECT_MAX_SIDE.toFloat() / maxOf(image.width, image.height)).coerceAtMost(1f)
         if (scale == 1f) return@withContext ocr.detect(image)
-        val small = Bitmap.createScaledBitmap(image, (image.width * scale).toInt(), (image.height * scale).toInt(), true)
+        val small = image.scale((image.width * scale).toInt(), (image.height * scale).toInt())
         ocr.detect(small).map { RectF(it.left / scale, it.top / scale, it.right / scale, it.bottom / scale) }
     }
 

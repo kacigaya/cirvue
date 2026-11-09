@@ -2,8 +2,9 @@ package app.cirvue.models
 
 import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
 import android.os.StatFs
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,11 +60,11 @@ class ModelStore(private val context: Context) {
             }
             for (f in missing) {
                 staging(pack, f)?.delete()
-                val request = DownloadManager.Request(Uri.parse(f.url))
+                val request = DownloadManager.Request(f.url.toUri())
                     .setTitle(f.name)
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                     .setDestinationInExternalFilesDir(context, null, stagingPath(pack, f))
-                ids.edit().putLong(key(pack, f), dm.enqueue(request)).apply()
+                ids.edit { putLong(key(pack, f), dm.enqueue(request)) }
             }
             set(pack, PackState.Downloading(null))
         }
@@ -110,7 +111,7 @@ class ModelStore(private val context: Context) {
                     clearDownloads(pack)
                     return set(pack, PackState.Failed(FailReason.Checksum))
                 }
-                ids.edit().remove(key(pack, f)).apply()
+                ids.edit { remove(key(pack, f)) }
             }
             return set(pack, if (isInstalled(pack)) PackState.Installed else PackState.Missing)
         }
@@ -161,7 +162,7 @@ class ModelStore(private val context: Context) {
     private fun clearDownloads(pack: ModelPack) {
         for (f in pack.files) {
             idOf(pack, f)?.let { dm.remove(it) }
-            ids.edit().remove(key(pack, f)).apply()
+            ids.edit { remove(key(pack, f)) }
             staging(pack, f)?.delete()
         }
     }

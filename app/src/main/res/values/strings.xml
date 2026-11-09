@@ -59,5 +59,4 @@
     <string name="camera_permission_body">Cirvue uses the camera only while this screen is open. Photos stay in memory and are never saved.</string>
     <string name="action_allow">Allow</string>
     <string name="camera_unavailable">No camera available. Choose a photo instead.</string>
-    <string name="action_retake">Retake</string>
 </resources>

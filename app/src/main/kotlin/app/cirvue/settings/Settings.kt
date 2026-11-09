@@ -1,6 +1,7 @@
 package app.cirvue.settings
 
 import android.content.Context
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +16,7 @@ class Settings(context: Context) {
     val reviewQuery: StateFlow<Boolean> = _reviewQuery.asStateFlow()
 
     fun setReviewQuery(value: Boolean) {
-        prefs.edit().putBoolean(KEY_REVIEW, value).apply()
+        prefs.edit { putBoolean(KEY_REVIEW, value) }
         _reviewQuery.value = value
     }
 
