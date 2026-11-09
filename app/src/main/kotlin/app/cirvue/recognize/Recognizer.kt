@@ -28,9 +28,16 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
     val hasText: Boolean get() = models.isInstalled(ModelPack.Text)
     val hasVision: Boolean get() = models.isInstalled(ModelPack.Vision)
 
-    /** Text regions of the whole image, so a tap can select a line. Empty without OCR. */
+    /**
+     * Text regions of the whole image, so a tap can select a line. Empty without OCR. Detection
+     * runs on a downscaled copy: full resolution takes seconds and would delay the first search.
+     */
     suspend fun textBoxes(image: Bitmap): List<RectF> = withContext(native) {
-        textRecognizer()?.detect(image).orEmpty()
+        val ocr = textRecognizer() ?: return@withContext emptyList()
+        val scale = (DETECT_MAX_SIDE.toFloat() / maxOf(image.width, image.height)).coerceAtMost(1f)
+        if (scale == 1f) return@withContext ocr.detect(image)
+        val small = Bitmap.createScaledBitmap(image, (image.width * scale).toInt(), (image.height * scale).toInt(), true)
+        ocr.detect(small).map { RectF(it.left / scale, it.top / scale, it.right / scale, it.bottom / scale) }
     }
 
     /** Loads the models ahead of the first search, so the first result comes sooner. */
@@ -84,6 +91,9 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
 
     private companion object {
         const val MAX_TOKENS = 24
+
+        /** Long side for tap-target detection. Screen text stays at least about 10 px tall. */
+        const val DETECT_MAX_SIDE = 1440
 
         fun prompt(texts: List<String>): String = buildString {
             append("Write a short web search query that identifies the main object in this image. ")
