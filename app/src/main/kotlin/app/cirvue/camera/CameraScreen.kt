@@ -66,10 +66,10 @@ import app.cirvue.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import kotlin.math.max
 
 /** Long side of a captured or picked image. Enough for OCR; keeps memory use low. */
@@ -249,16 +249,19 @@ private fun hasCameraPermission(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
 /** Captures into memory only. CameraX never writes a file with this callback. */
-private suspend fun ImageCapture.takeBitmap(context: Context): Bitmap = suspendCoroutine { cont ->
+private suspend fun ImageCapture.takeBitmap(context: Context): Bitmap = suspendCancellableCoroutine { cont ->
     takePicture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val result = image.use { it.toUprightBitmap() }
-                cont.resume(result)
+                // A capture that ends after the screen moved on must not replace a newer image.
+                if (cont.isActive) cont.resume(result) else result.recycle()
             }
 
-            override fun onError(exception: ImageCaptureException) = cont.resumeWithException(exception)
+            override fun onError(exception: ImageCaptureException) {
+                if (cont.isActive) cont.resumeWithException(exception)
+            }
         },
     )
 }
