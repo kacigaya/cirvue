@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Runs OCR and the vision model on a crop and builds the query. Native models load on first
@@ -59,13 +60,19 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
     }
 
     private suspend fun describe(crop: Bitmap, texts: List<String>): String? = coroutineScope {
-        val model = withContext(native) { visionModel() } ?: return@coroutineScope null
-        val job = async(native) { model.describe(crop, prompt(texts), MAX_TOKENS) }
+        // One task looks up and runs the model, so release() cannot close it in between.
+        val running = AtomicReference<VisionModel?>()
+        val job = async(native) {
+            visionModel()?.let { model ->
+                running.set(model)
+                model.describe(crop, prompt(texts), MAX_TOKENS)
+            }
+        }
         try {
             job.await()
         } catch (e: CancellationException) {
             // The native loop checks this flag between tokens; the thread frees up right after.
-            model.cancel()
+            running.get()?.cancel()
             throw e
         }
     }
