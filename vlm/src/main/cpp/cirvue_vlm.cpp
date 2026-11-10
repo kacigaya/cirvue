@@ -6,6 +6,7 @@
 #include <dlfcn.h>
 #include <atomic>
 #include <chrono>
+#include <cstring>
 #include <memory>
 #include <ios>
 #include <mutex>
@@ -62,7 +63,8 @@ struct Engine {
     }
 };
 bool abort_eval(void * data) { return static_cast<Engine *>(data)->cancelled.load(); }
-std::unique_ptr<Engine> load(const std::string & model, const std::string & projector, int threads) {
+std::unique_ptr<Engine> load(const std::string & model, const std::string & projector, int threads,
+                             int image_tokens) {
     initialize();
     auto result = std::make_unique<Engine>();
     auto mp = llama_model_default_params();
@@ -83,10 +85,29 @@ std::unique_ptr<Engine> load(const std::string & model, const std::string & proj
     vp.n_threads = threads;
     vp.print_timings = false;
     vp.warmup = false;
+    // Only encoders with a variable image size read this limit. Others ignore it.
+    if (image_tokens > 0) vp.image_max_tokens = image_tokens;
     result->vision = mtmd_init_from_file(projector.c_str(), result->model, vp);
     if (!result->vision) throw std::ios_base::failure("Cannot load vision projector GGUF");
     if (!mtmd_support_vision(result->vision)) throw std::runtime_error("Projector does not support images");
     return result;
+}
+// Formats one user turn and opens the model turn.
+std::string format_turn(const llama_model * model, const std::string & user) {
+    const char * tmpl = llama_model_chat_template(model, nullptr);
+    if (!tmpl) throw std::runtime_error("Model has no chat template");
+    llama_chat_message message{"user", user.c_str()};
+    int size = llama_chat_apply_template(tmpl, &message, 1, true, nullptr, 0);
+    if (size < 0) {
+        // Without a Jinja engine, llama.cpp formats only the templates it knows by name. Gemma 4
+        // is not one of them. Its template gives a single user turn, with thinking off, this form.
+        if (!std::strstr(tmpl, "<|turn>")) throw std::runtime_error("Model chat template is unsupported");
+        return "<|turn>user\n" + user + "<turn|>\n<|turn>model\n";
+    }
+    std::string formatted(size, '\0');
+    if (llama_chat_apply_template(tmpl, &message, 1, true, formatted.data(), size + 1) != size)
+        throw std::runtime_error("Cannot format model prompt");
+    return formatted;
 }
 struct Metrics { double prompt_ms = 0, generation_ms = 0; int tokens = 0; };
 std::string describe(Engine & e, const uint8_t * rgb, uint32_t width, uint32_t height,
@@ -96,17 +117,9 @@ std::string describe(Engine & e, const uint8_t * rgb, uint32_t width, uint32_t h
     struct Clear { llama_memory_t memory; ~Clear() { llama_memory_clear(memory, true); } } clear{memory};
     mtmd::bitmap_ptr bitmap(mtmd_bitmap_init(width, height, rgb));
     if (!bitmap) throw std::runtime_error("Cannot create image input");
-    std::string user = std::string(mtmd_default_marker()) + "\n" + prompt;
-    llama_chat_message message{"user", user.c_str()};
-    const char * tmpl = llama_model_chat_template(e.model, nullptr);
-    if (!tmpl) throw std::runtime_error("Model has no chat template");
-    int size = llama_chat_apply_template(tmpl, &message, 1, true, nullptr, 0);
-    if (size < 0) throw std::runtime_error("Model chat template is unsupported");
-    std::vector<char> formatted(size + 1);
-    if (llama_chat_apply_template(tmpl, &message, 1, true, formatted.data(), formatted.size()) != size)
-        throw std::runtime_error("Cannot format model prompt");
+    std::string formatted = format_turn(e.model, std::string(mtmd_default_marker()) + "\n" + prompt);
     mtmd::input_chunks_ptr chunks(mtmd_input_chunks_init());
-    mtmd_input_text text{formatted.data(), static_cast<size_t>(size), true, true};
+    mtmd_input_text text{formatted.data(), formatted.size(), true, true};
     const mtmd_bitmap * images[] = {bitmap.get()};
     if (mtmd_tokenize(e.vision, chunks.get(), &text, images, 1) != 0)
         throw std::runtime_error("Cannot tokenize image and prompt");
@@ -161,8 +174,8 @@ std::string bytes(JNIEnv * env, jbyteArray array) {
 }
 }
 extern "C" JNIEXPORT jlong JNICALL Java_app_cirvue_vlm_VisionModel_nativeLoad(
-    JNIEnv * env, jobject, jbyteArray model, jbyteArray projector, jint threads) {
-    try { return reinterpret_cast<jlong>(load(bytes(env, model), bytes(env, projector), threads).release()); }
+    JNIEnv * env, jobject, jbyteArray model, jbyteArray projector, jint threads, jint image_tokens) {
+    try { return reinterpret_cast<jlong>(load(bytes(env, model), bytes(env, projector), threads, image_tokens).release()); }
     catch (const std::exception & error) { throw_java(env, error); return 0; }
 }
 extern "C" JNIEXPORT jbyteArray JNICALL Java_app_cirvue_vlm_VisionModel_nativeDescribe(
@@ -201,9 +214,10 @@ extern "C" JNIEXPORT void JNICALL Java_app_cirvue_vlm_VisionModel_nativeClose(JN
 #include <sys/resource.h>
 int main(int argc, char ** argv) {
     try {
-        if (argc != 6) throw std::runtime_error("Usage: benchmark model projector rgb width height");
+        if (argc < 6 || argc > 8)
+            throw std::runtime_error("Usage: benchmark model projector rgb width height [image-tokens] [prompt]");
         auto start = Clock::now();
-        auto engine = load(argv[1], argv[2], 4);
+        auto engine = load(argv[1], argv[2], 4, argc > 6 ? std::stoi(argv[6]) : 0);
         double load_ms = milliseconds(start);
         int width = std::stoi(argv[4]), height = std::stoi(argv[5]);
         std::vector<uint8_t> rgb(static_cast<size_t>(width) * height * 3);
@@ -225,8 +239,8 @@ int main(int argc, char ** argv) {
         double encode_ms = milliseconds(start);
         Metrics metrics;
         start = Clock::now();
-        auto output = describe(*engine, rgb.data(), width, height,
-            "Write a short web search query for the main object in this image. Output only the query.", 32, &metrics);
+        auto output = describe(*engine, rgb.data(), width, height, argc > 7 ? argv[7] :
+            "Write a short web search query for the main object in this image. Output only the query.", 64, &metrics);
         double total = milliseconds(start);
         rusage usage{}; getrusage(RUSAGE_SELF, &usage);
         std::cout << "load_ms=" << load_ms << " isolated_encode_ms=" << encode_ms

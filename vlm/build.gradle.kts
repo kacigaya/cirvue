@@ -10,7 +10,7 @@ android {
     defaultConfig {
         minSdk = 29
         consumerProguardFiles("consumer-rules.pro")
-        // SmolVLM2 needs a 64-bit ARM CPU to run at a usable speed.
+        // The vision models need a 64-bit ARM CPU to run at a usable speed.
         ndk { abiFilters += "arm64-v8a" }
         externalNativeBuild {
             cmake {
