@@ -59,6 +59,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(
     isAssistant: Boolean,
+    fullVisionSupported: Boolean,
     settings: Settings,
     models: ModelStore,
     onAssistantSettings: () -> Unit,
@@ -110,7 +111,8 @@ fun HomeScreen(
             item {
                 Card(Modifier.readable(), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)) {
                     ModelPack.entries.forEach { pack ->
-                        ModelRow(pack, states[pack] ?: PackState.Missing, onDownload, onRemove)
+                        val supported = pack != ModelPack.VisionFull || fullVisionSupported
+                        ModelRow(pack, states[pack] ?: PackState.Missing, supported, onDownload, onRemove)
                     }
                 }
             }
@@ -196,14 +198,25 @@ private fun AssistantCard(isAssistant: Boolean, onSettings: () -> Unit, modifier
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ModelRow(pack: ModelPack, state: PackState, onDownload: (ModelPack) -> Unit, onRemove: (ModelPack) -> Unit) {
+private fun ModelRow(
+    pack: ModelPack,
+    state: PackState,
+    supported: Boolean,
+    onDownload: (ModelPack) -> Unit,
+    onRemove: (ModelPack) -> Unit,
+) {
     val context = LocalContext.current
     val size = Formatter.formatShortFileSize(context, pack.size)
-    val title = stringResource(if (pack == ModelPack.Text) R.string.model_text else R.string.model_vision)
-    val detail = stringResource(if (pack == ModelPack.Text) R.string.model_text_detail else R.string.model_vision_detail)
+    val (title, detail) = when (pack) {
+        ModelPack.Text -> R.string.model_text to R.string.model_text_detail
+        ModelPack.VisionLite -> R.string.model_vision_lite to R.string.model_vision_lite_detail
+        ModelPack.VisionFull -> R.string.model_vision_full to R.string.model_vision_full_detail
+    }
+    // A phone with too little memory gets no download button. An installed pack can still go.
+    val blocked = !supported && (state == PackState.Missing || state is PackState.Failed)
     val status = when (state) {
         PackState.Installed -> stringResource(R.string.model_installed, size)
-        PackState.Missing -> stringResource(R.string.model_missing, size)
+        PackState.Missing -> if (blocked) stringResource(R.string.model_needs_memory) else stringResource(R.string.model_missing, size)
         is PackState.Downloading -> state.progress?.let { stringResource(R.string.model_downloading, (it * 100).toInt()) }
             ?: stringResource(R.string.model_downloading_unknown)
         PackState.Verifying -> stringResource(R.string.model_verifying)
@@ -216,10 +229,10 @@ private fun ModelRow(pack: ModelPack, state: PackState, onDownload: (ModelPack) 
         )
     }
     ListItem(
-        headlineContent = { Text(title) },
+        headlineContent = { Text(stringResource(title)) },
         supportingContent = {
             Column {
-                Text(detail)
+                Text(stringResource(detail))
                 Text(
                     status,
                     color = if (state is PackState.Failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -242,8 +255,10 @@ private fun ModelRow(pack: ModelPack, state: PackState, onDownload: (ModelPack) 
                 is PackState.Downloading, PackState.Verifying -> IconButton(onClick = { onRemove(pack) }) {
                     Icon(painterResource(R.drawable.ic_close), stringResource(R.string.action_cancel))
                 }
-                PackState.Missing, is PackState.Failed -> FilledTonalButton(onClick = { onDownload(pack) }) {
-                    Text(stringResource(R.string.action_download))
+                PackState.Missing, is PackState.Failed -> if (!blocked) {
+                    FilledTonalButton(onClick = { onDownload(pack) }) {
+                        Text(stringResource(R.string.action_download))
+                    }
                 }
             }
         },

@@ -68,7 +68,8 @@ sudo docker rm -f velin-android
    adb shell cmd role add-role-holder android.app.role.ASSISTANT app.cirvue
    ```
 
-2. Open the assistant: `adb shell cmd voiceinteraction show`, or `adb shell input keyevent KEYCODE_ASSIST`.
+2. Open the assistant: `adb shell input keyevent KEYCODE_ASSIST`. `cmd voiceinteraction show` works only as root.
+3. Draw a selection with `adb shell input swipe X1 Y1 X2 Y2 1500`. A faster swipe can lose its end while a model runs.
 
 ## Models
 
@@ -78,3 +79,5 @@ Push test models instead of downloading them. The debug app reads them from its 
 adb push ~/cirvue-models/ocr /data/local/tmp/cirvue-ocr
 adb shell run-as app.cirvue sh -c 'mkdir -p files/models && cp -r /data/local/tmp/cirvue-ocr files/models/ocr'
 ```
+
+The pack directories are `ocr`, `vlm` (Lite), and `vlm-full` (Full). The Full files are 3.4 GB. `sudo docker cp` into `/data/local/tmp` is faster than `adb push` for them.

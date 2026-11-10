@@ -1,5 +1,6 @@
 package app.cirvue
 
+import android.app.ActivityManager
 import android.app.role.RoleManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -12,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import app.cirvue.models.ModelPack
 import app.cirvue.ui.HomeScreen
 import app.cirvue.ui.theme.CirvueTheme
 import kotlinx.coroutines.launch
@@ -23,10 +25,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        val memory = ActivityManager.MemoryInfo().also { getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
         setContent {
             CirvueTheme {
                 HomeScreen(
                     isAssistant = isAssistant,
+                    fullVisionSupported = memory.totalMem >= ModelPack.FULL_MIN_MEMORY_BYTES,
                     settings = app.settings,
                     models = app.models,
                     onAssistantSettings = ::openAssistantSettings,

@@ -15,20 +15,39 @@ enum class ModelPack(val dir: String, val files: List<ModelFile>) {
         ),
     ),
 
-    /** SmolVLM2-500M-Video-Instruct, Q8_0 GGUF, Apache-2.0. */
-    Vision(
+    /** SmolVLM2-500M-Video-Instruct, Q8_0 GGUF, Apache-2.0. Small and light on memory. */
+    VisionLite(
         dir = "vlm",
         files = listOf(
-            ModelFile("model.gguf", hf(VLM, "SmolVLM2-500M-Video-Instruct-Q8_0.gguf"), "6f67b8036b2469fcd71728702720c6b51aebd759b78137a8120733b4d66438bc", 436_808_704),
-            ModelFile("mmproj.gguf", hf(VLM, "mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"), "921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b", 108_785_184),
+            ModelFile("model.gguf", hf(SMOLVLM, "SmolVLM2-500M-Video-Instruct-Q8_0.gguf"), "6f67b8036b2469fcd71728702720c6b51aebd759b78137a8120733b4d66438bc", 436_808_704),
+            ModelFile("mmproj.gguf", hf(SMOLVLM, "mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf"), "921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b", 108_785_184),
+        ),
+    ),
+
+    /** Gemma 4 E2B, Q4_0 GGUF, Apache-2.0. Names brands, products, places, and species. */
+    VisionFull(
+        dir = "vlm-full",
+        files = listOf(
+            ModelFile("model.gguf", hf(GEMMA, "gemma-4-E2B-it-Q4_0.gguf"), "8e30dff3ac4c8434c49a7036fa15564bdbb6044e42bf04550bf1a096ad7e6a52", 2_841_481_184),
+            ModelFile("mmproj.gguf", hf(GEMMA, "mmproj-gemma-4-E2B-it-Q8_0.gguf"), "042cc2561806cd3b5cb5efb25cab76911e3100c43cc09d854904f921924b1429", 557_368_096),
         ),
     );
 
     val size: Long get() = files.sumOf { it.size }
+
+    companion object {
+        /**
+         * Smallest device memory for [VisionFull], as Android reports it. On redroid the loaded
+         * model held 2.1 GB of private memory and 2.7 GB of mapped file. This passes phones sold
+         * with 8 GB, which report about 7.3 GiB, and stops phones sold with 6 GB.
+         */
+        const val FULL_MIN_MEMORY_BYTES = 13L shl 29 // 6.5 GiB
+    }
 }
 
 private const val OCR_DET = "PaddlePaddle/PP-OCRv6_small_det_onnx/resolve/28fe5895c24fd108c19eb3e8479f4ab385fbfc62"
 private const val OCR_REC = "PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/b8f84f0b80c529de40b4fbb3544b84fa7233a513"
-private const val VLM = "ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/resolve/ccd7aae53bcb1997355c2f094959e72b3642ce17"
+private const val SMOLVLM = "ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/resolve/ccd7aae53bcb1997355c2f094959e72b3642ce17"
+private const val GEMMA = "ggml-org/gemma-4-E2B-it-GGUF/resolve/63f6c6f23b3e9e5f9737708daec2f88c9ac2e921"
 
 private fun hf(repoRevision: String, path: String) = "https://huggingface.co/$repoRevision/$path"

@@ -2,6 +2,8 @@ package app.cirvue.ui
 
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -14,6 +16,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +32,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -63,6 +68,9 @@ import app.cirvue.Stage
 import app.cirvue.Tool
 import app.cirvue.camera.CameraScreen
 import app.cirvue.capture.Source
+import app.cirvue.search.Query
+import app.cirvue.search.Seen
+import app.cirvue.search.Vertical
 import app.cirvue.select.SelectionOverlay
 
 @Composable
@@ -204,10 +212,11 @@ private fun ResultPanel(state: SearchState, onOpenApp: () -> Unit, modifier: Mod
                         QueryField(state)
                     }
                     is Panel.Ready -> {
+                        Recognized(panel.query)
                         QueryField(state)
                         if (panel.query.suggestions.isNotEmpty()) {
                             Row(
-                                Modifier.padding(top = 12.dp).horizontalScroll(rememberScrollState()),
+                                Modifier.horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 panel.query.suggestions.forEach { s ->
@@ -222,8 +231,78 @@ private fun ResultPanel(state: SearchState, onOpenApp: () -> Unit, modifier: Mod
     }
 }
 
+/** What Cirvue found in the selection, and a notice when the user must check the query. */
+@Composable
+private fun Recognized(query: Query) {
+    val seen = query.seen
+    val title = when {
+        query.productCode -> stringResource(R.string.found_product_code)
+        seen == null -> null
+        seen.type.isEmpty() -> nameLabel(seen)
+        else -> seen.type
+    }
+    if (title != null) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        if (seen != null && seen.type.isNotEmpty() && seen.name.isNotEmpty()) {
+            Text(
+                nameLabel(seen),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    if (query.review) {
+        Row(Modifier.padding(top = if (title != null) 8.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painterResource(R.drawable.ic_shield),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                stringResource(R.string.review_notice),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    if (title != null || query.review) Spacer(Modifier.height(12.dp))
+}
+
+/** A name that text in the image does not confirm is a guess, and the label says so. */
+@Composable
+private fun nameLabel(seen: Seen): String =
+    if (seen.confirmed) seen.name else stringResource(R.string.found_maybe, seen.name)
+
+/** The query field, the Search button, and the other places to search. */
 @Composable
 private fun QueryField(state: SearchState) {
+    QueryRow(state)
+    // Wraps on narrow screens, so no action hides behind a scroll.
+    FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val hasQuery = state.query.isNotBlank()
+        ActionChip(R.drawable.ic_image, R.string.action_images, hasQuery) { state.submit(Vertical.Images) }
+        ActionChip(R.drawable.ic_shopping_bag, R.string.action_shopping, hasQuery) { state.submit(Vertical.Shopping) }
+        // Sends the image to an app the user picks. Nothing else in Cirvue does that.
+        if (state.cropped != null) {
+            ActionChip(R.drawable.ic_image_search, R.string.action_share_image, true, state::shareImage)
+        }
+    }
+}
+
+@Composable
+private fun ActionChip(@DrawableRes icon: Int, @StringRes label: Int, enabled: Boolean, onClick: () -> Unit) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(stringResource(label)) },
+        enabled = enabled,
+        leadingIcon = { Icon(painterResource(icon), null, Modifier.size(AssistChipDefaults.IconSize)) },
+    )
+}
+
+@Composable
+private fun QueryRow(state: SearchState) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = state.query,
@@ -244,7 +323,7 @@ private fun QueryField(state: SearchState) {
             shape = CircleShape,
         )
         Spacer(Modifier.size(8.dp))
-        Button(onClick = state::submit, enabled = state.query.isNotBlank()) {
+        Button(onClick = { state.submit() }, enabled = state.query.isNotBlank()) {
             Text(stringResource(R.string.action_search))
         }
     }

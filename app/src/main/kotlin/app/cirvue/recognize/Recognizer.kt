@@ -26,9 +26,10 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
     private val native = Dispatchers.Default.limitedParallelism(1)
     private var ocr: TextRecognizer? = null
     private var vlm: VisionModel? = null
+    private var vlmPack: ModelPack? = null
 
     val hasText: Boolean get() = models.isInstalled(ModelPack.Text)
-    val hasVision: Boolean get() = models.isInstalled(ModelPack.Vision)
+    val hasVision: Boolean get() = visionPack() != null
 
     /**
      * Text regions of the whole image, so a tap can select a line. Empty without OCR. Detection
@@ -65,7 +66,11 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
         val job = async(native) {
             visionModel()?.let { model ->
                 running.set(model)
-                model.describe(crop, prompt(texts), MAX_TOKENS)
+                if (vlmPack == ModelPack.VisionFull) {
+                    model.describe(crop, fullPrompt(texts), FULL_MAX_TOKENS)
+                } else {
+                    model.describe(crop, litePrompt(texts), LITE_MAX_TOKENS)
+                }
             }
         }
         try {
@@ -79,8 +84,12 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
 
     suspend fun release() = withContext(native) {
         ocr?.close(); ocr = null
-        vlm?.close(); vlm = null
+        vlm?.close(); vlm = null; vlmPack = null
     }
+
+    /** The full model when it is installed, because it names more objects. */
+    private fun visionPack(): ModelPack? =
+        listOf(ModelPack.VisionFull, ModelPack.VisionLite).firstOrNull(models::isInstalled)
 
     private fun textRecognizer(): TextRecognizer? {
         if (ocr == null && hasText) {
@@ -91,15 +100,37 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
     }
 
     private fun visionModel(): VisionModel? {
-        if (vlm == null && hasVision) {
-            val f = { name: String -> models.file(ModelPack.Vision, name) }
-            vlm = VisionModel.load(f("model.gguf"), f("mmproj.gguf"), threads)
+        val pack = visionPack()
+        if (pack != vlmPack) {
+            // The user installed or deleted a pack since the last search.
+            vlm?.close(); vlm = null; vlmPack = pack
+        }
+        if (vlm == null && pack != null) {
+            val f = { name: String -> models.file(pack, name) }
+            vlm = if (pack == ModelPack.VisionFull) {
+                VisionModel.load(f("model.gguf"), f("mmproj.gguf"), threads, FULL_MAX_SIDE, FULL_IMAGE_TOKENS)
+            } else {
+                VisionModel.load(f("model.gguf"), f("mmproj.gguf"), threads)
+            }
         }
         return vlm
     }
 
     private companion object {
-        const val MAX_TOKENS = 24
+        const val LITE_MAX_TOKENS = 24
+
+        /** The four answer lines of [fullPrompt] took 19 to 31 tokens in tests. */
+        const val FULL_MAX_TOKENS = 64
+
+        /**
+         * Image tokens for Gemma 4, from its budgets of 70, 140, 280, 560, and 1120. On redroid
+         * a search took 4.8 s with 70, 6.9 s with 140, and 13.9 s with 280. 140 was the smallest
+         * budget that read a small logo. OCR reads the small text, so more is not necessary.
+         */
+        const val FULL_IMAGE_TOKENS = 140
+
+        /** 140 tokens cover about 320 000 pixels. A larger image only costs time to copy. */
+        const val FULL_MAX_SIDE = 1024
 
         /** Below this, PP-OCR output is mostly misread icons and textures. */
         const val MIN_CONFIDENCE = 0.5f
@@ -107,7 +138,25 @@ class Recognizer(private val models: ModelStore, private val threads: Int = defa
         /** Long side for tap-target detection. Screen text stays at least about 10 px tall. */
         const val DETECT_MAX_SIDE = 1440
 
-        fun prompt(texts: List<String>): String = buildString {
+        /** Fixed answer lines, which `QueryBuilder` reads. */
+        fun fullPrompt(texts: List<String>): String = buildString {
+            append("Identify the main object in this image for a web search.\n")
+            append("Answer with exactly these four lines:\n")
+            append("type: what it is, in 1 to 4 general words\n")
+            append("brand: the brand, or unknown\n")
+            append("name: the exact product model, place, artwork, or species name, or unknown\n")
+            append("query: a web search query of at most 8 words. ")
+            append("Start with the brand and the name if you know them.\n")
+            append("Give a brand or a name only if you can read it or you are sure.")
+            if (texts.isNotEmpty()) {
+                append("\nText read from the image: \"")
+                append(texts.joinToString(" ").take(160))
+                append("\".")
+            }
+        }
+
+        /** SmolVLM2 follows one short instruction better than a list of fields. */
+        fun litePrompt(texts: List<String>): String = buildString {
             append("Write a short web search query that identifies the main object in this image. ")
             append("Use at most 8 words. Name a brand or model only if it is clearly readable. ")
             append("If you are not sure what it is, describe it in general words. ")
