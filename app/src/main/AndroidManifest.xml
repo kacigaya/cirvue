@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Only for optional model downloads through DownloadManager. Images never leave the device. -->
+    <!-- Only for optional model downloads through DownloadManager. Cirvue uploads no image. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
 
@@ -59,6 +59,14 @@
             android:authorities="${applicationId}.onnxruntime_telemetry_initializer"
             tools:ignore="MissingClass"
             tools:node="remove" />
+
+        <!-- Serves the image that the user shares with another app, from memory. Not exported:
+             only the app picked in the share sheet gets a read grant, for that one image. -->
+        <provider
+            android:name=".share.CropProvider"
+            android:authorities="${applicationId}.share"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <service
             android:name=".assist.CirvueInteractionService"

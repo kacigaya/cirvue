@@ -11,6 +11,12 @@ class DuckDuckGoTest {
         )
     }
 
+    @Test fun imagesAndShoppingAddOnlyTheTabParameters() {
+        assertEquals("https://duckduckgo.com/?q=red+chair&ia=images&iax=images", DuckDuckGo.searchUrl("red chair", Vertical.Images))
+        assertEquals("https://duckduckgo.com/?q=red+chair&ia=shopping&iax=shopping", DuckDuckGo.searchUrl("red chair", Vertical.Shopping))
+        assertEquals(DuckDuckGo.searchUrl("red chair"), DuckDuckGo.searchUrl("red chair", Vertical.Web))
+    }
+
     @Test fun blankQueryHasEmptyParameter() {
         assertEquals("https://duckduckgo.com/?q=", DuckDuckGo.searchUrl(" \t\n"))
     }

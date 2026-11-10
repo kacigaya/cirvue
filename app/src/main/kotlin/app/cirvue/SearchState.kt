@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Size
 import app.cirvue.capture.Source
 import app.cirvue.recognize.Recognizer
 import app.cirvue.search.Query
+import app.cirvue.search.Vertical
 import app.cirvue.select.Selection
 import app.cirvue.select.SelectionGeometry
 import kotlinx.coroutines.CancellationException
@@ -44,7 +45,8 @@ class SearchState(
     private val scope: CoroutineScope,
     private val recognizer: Recognizer,
     private val autoSearch: () -> Boolean,
-    private val search: (String) -> Unit,
+    private val search: (String, Vertical) -> Unit,
+    private val share: (Bitmap) -> Unit,
 ) {
     var stage: Stage by mutableStateOf(Stage.Camera)
         private set
@@ -57,6 +59,10 @@ class SearchState(
     var textBoxes: List<Rect> by mutableStateOf(emptyList())
         private set
 
+    /** The selected part of the image. The user can share it with another app. */
+    var cropped: Bitmap? by mutableStateOf(null)
+        private set
+
     private var job: Job? = null
     private var boxesJob: Job? = null
 
@@ -64,6 +70,7 @@ class SearchState(
         job?.cancel(); boxesJob?.cancel()
         this.stage = stage
         selection = null
+        cropped = null
         panel = Panel.Hidden
         query = ""
         textBoxes = emptyList()
@@ -81,38 +88,42 @@ class SearchState(
         val stage = stage as? Stage.Select ?: return
         this.selection = selection
         job?.cancel()
-        if (!recognizer.hasText && !recognizer.hasVision) {
-            panel = Panel.NoModels
-            return
-        }
-        panel = Panel.Working
+        cropped = null
+        val canRecognize = recognizer.hasText || recognizer.hasVision
+        panel = if (canRecognize) Panel.Working else Panel.NoModels
         job = scope.launch {
-            panel = try {
+            try {
                 val crop = withContext(Dispatchers.Default) { crop(stage.image, selection.bounds) }
+                cropped = crop
+                if (!canRecognize) return@launch
                 val result = crop?.let { recognizer.recognize(it) }
                 query = result?.text.orEmpty()
-                if (result == null || result.text.isBlank()) {
+                panel = if (result == null || result.text.isBlank()) {
                     Panel.NothingFound
                 } else {
-                    if (autoSearch()) search(result.text)
+                    if (autoSearch() && !result.review) search(result.text, Vertical.Web)
                     Panel.Ready(result)
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                Panel.Failed
+                panel = Panel.Failed
             }
         }
     }
 
-    fun submit() {
+    fun submit(vertical: Vertical = Vertical.Web) {
         val text = query.trim()
-        if (text.isNotEmpty()) search(text)
+        if (text.isNotEmpty()) search(text, vertical)
     }
 
     fun pickSuggestion(text: String) {
         query = text
-        search(text)
+        search(text, Vertical.Web)
+    }
+
+    fun shareImage() {
+        cropped?.let(share)
     }
 
     /** Null when the selection lies outside the image. */
