@@ -20,7 +20,7 @@ class CirvueApp : Application() {
     @Suppress("DEPRECATION") // TRIM_MEMORY_BACKGROUND is the documented signal we need.
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        // The vision model holds several hundred MB. Free it once the app leaves the screen.
+        // The vision model holds from several hundred MB to 2 GB. Free it once the app leaves the screen.
         if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
             scope.launch { recognizer.release() }
         }
