@@ -24,8 +24,12 @@
 - Select what you want to search: draw a circle, drag a box, or tap a line of text.
 - Search from a photo: use the camera or pick an image from your gallery.
 - Text recognition on the device with PP-OCRv6 (50 languages).
-- Image description on the device with SmolVLM2 when the selection has little text.
-- Optional review: edit the query before the search opens.
+- Object recognition on the device when the selection has little text. Gemma 4 E2B names products, brands, places, and plants. SmolVLM2 is the small option.
+- A result panel shows what Cirvue recognized. It says "Could be" when no text in the image confirms the name.
+- Open the DuckDuckGo web, image, or shopping results.
+- Product codes: Cirvue reads the digits under a barcode and searches for the code.
+- Search by image: share the selected part with an app that you pick.
+- Review: edit the query before the search opens. Cirvue always asks first when the query looks private.
 - Up to three suggestions from the text in your selection.
 - Material 3 Expressive with Material You colors.
 
@@ -33,7 +37,9 @@
 
 - No account, no analytics, no ads, no telemetry.
 - No Google Play services, Accessibility Service, root, or hidden APIs.
-- Images never leave your device. Only the text query goes to DuckDuckGo.
+- Cirvue uploads no image. Only the text query goes to DuckDuckGo.
+- An image leaves Cirvue only when you tap "Search by image" and pick an app in the Android share sheet. That app then follows its own privacy policy.
+- A query with an email address, a long number, or a long text from your screen waits for you. You see it before it leaves the device.
 - Screenshots and photos stay in memory. Cirvue drops them when the screen closes.
 - Apps that block screenshots (`FLAG_SECURE`) stay blocked.
 - Search opens in your browser through Custom Tabs. Cirvue adds no tracking parameters.
@@ -52,14 +58,16 @@ Cirvue does not include models in the APK. Download them from the home screen. E
 | Pack | Model | Size | License |
 |---|---|---|---|
 | Text recognition | [PP-OCRv6 small](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx) | 31 MB | Apache-2.0 |
-| Visual recognition | [SmolVLM2-500M Q8_0](https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF) | 546 MB | Apache-2.0 |
+| Visual recognition · Lite | [SmolVLM2-500M Q8_0](https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF) | 546 MB | Apache-2.0 |
+| Visual recognition · Full | [Gemma 4 E2B Q4_0](https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF) | 3.4 GB | Apache-2.0 |
 
-Without models, you type the query yourself.
+Install one visual pack. Full gives better names and needs a phone with 8 GB of memory. Cirvue uses Full when both packs are installed. Without models, you type the query yourself.
 
 ## Requirements
 
 - Android 10 (API 29) or later.
 - 64-bit ARM device (`arm64-v8a`).
+- 8 GB of memory for the Full visual pack.
 
 ## Build
 
@@ -89,3 +97,6 @@ In an existing clone, run `git submodule update --init`.
 - 64-bit ARM only.
 - Strongly rotated text reads less well.
 - Tap selects the text line under your finger. Without text, it selects a square around the tap point.
+- A recognized name can be wrong. Check it before you buy.
+- Cirvue cannot find similar products or copies of an image by itself. Use "Search by image" for that.
+- Cirvue reads the digits of a product code, not the bars. It reads no QR codes.

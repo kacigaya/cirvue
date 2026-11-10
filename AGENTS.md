@@ -5,7 +5,7 @@ Privacy-first Android alternative to Circle to Search. Kotlin, Jetpack Compose, 
 ## Rules
 
 - No Google Play services, accounts, analytics, ads, or telemetry.
-- Never upload images. Only the generated text query leaves the device, and only to DuckDuckGo.
+- Never upload images. Cirvue sends only the generated text query, and only to DuckDuckGo. The one exception is "Search by image": the user opens the Android share sheet and picks the app that gets the selected crop. Add no other path for an image to leave the app.
 - Do not store screenshots or photos on disk. Keep them in memory and drop them when the screen closes.
 - No Accessibility Service, root, Shizuku, or hidden APIs. Respect `FLAG_SECURE` (a null screenshot).
 - Ask before you add a dependency.
@@ -15,7 +15,7 @@ Privacy-first Android alternative to Circle to Search. Kotlin, Jetpack Compose, 
 
 - `:app`: assistant session, camera, selection overlay, recognition pipeline, search, settings, model downloads.
 - `:ocr`: PP-OCRv6 (small) text detection and recognition on ONNX Runtime. Pure Kotlin pre- and post-processing, no OpenCV.
-- `:vlm`: SmolVLM2-500M on llama.cpp (`libmtmd`) through JNI. llama.cpp is a Git submodule at `vlm/src/main/cpp/llama.cpp`, pinned to `v0.9.0`.
+- `:vlm`: SmolVLM2-500M (Lite) and Gemma 4 E2B (Full) on llama.cpp (`libmtmd`) through JNI. llama.cpp is a Git submodule at `vlm/src/main/cpp/llama.cpp`, pinned to `v0.9.0`.
 
 ## Toolchain
 
@@ -51,7 +51,7 @@ adb connect 127.0.0.1:5555
 adb -s 127.0.0.1:5555 install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Test models are in `~/cirvue-models` (`ocr/det.onnx`, `ocr/rec.onnx`, `ocr/rec.yml`, `vlm/model.gguf`, `vlm/mmproj.gguf`).
+Test models are in `~/cirvue-models` (`ocr/det.onnx`, `ocr/rec.onnx`, `ocr/rec.yml`, `vlm/model.gguf`, `vlm/mmproj.gguf`, `vlm-full/model.gguf`, `vlm-full/mmproj.gguf`).
 
 ## Git
 
